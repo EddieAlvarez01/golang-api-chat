@@ -21,6 +21,8 @@ func init() {
 	router = mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/", handlers.Test)
 	router.HandleFunc("/user/create-guest", handlers.AddGuest).Methods("POST")
+	router.HandleFunc("/user/create", handlers.Add).Methods("POST")
+	router.HandleFunc("/user/update/{id}", handlers.Update).Methods("PUT")
 }
 
 func initDB() {
