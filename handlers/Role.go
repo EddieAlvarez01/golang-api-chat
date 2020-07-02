@@ -11,8 +11,7 @@ import (
 func Test(w http.ResponseWriter, r *http.Request) {
 	var roles models.Role
 	db := database.DBConn
-	db.First(&roles)
-	//db.Table("Role").Where("id = ?", "3").Delete(&models.Role{})
+	db.Preload("Users").First(&roles, 2)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(roles)
 }
