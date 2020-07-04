@@ -12,6 +12,8 @@ import (
 	socketio "github.com/googollee/go-socket.io"
 )
 
+var listSockets map[string]socketio.Conn = map[string]socketio.Conn{}
+
 //InitSocket INICIALIZAR WEBSOCKET Y DEVOLVERLO
 func InitSocket() *socketio.Server {
 	pt := polling.Default
@@ -30,16 +32,51 @@ func InitSocket() *socketio.Server {
 	}
 	server.OnConnect("/", func(s socketio.Conn) error {
 		s.SetContext("")
-		fmt.Println("connected: ", s.ID())
+		fmt.Println("Un nuevo usuario conectado")
+		s.Join("general")
+		s.Emit("connected", s.ID())
+		listSockets[s.ID()] = s
 		return nil
 	})
 
-	server.OnError("/", func(s socketio.Conn, e error) {
-		fmt.Println("meet error:", e)
+	//MENSAJES DEL CHAT GENERAL, NO SE GUARDAN EN BD, CUALQUIERA PUEDE DEJAR MENSAJES RANDOM
+	server.OnEvent("/", "message-general", func(s socketio.Conn, data map[string]string) {
+		server.BroadcastToRoom("", "general", "message-general", data)
 	})
 
-	server.OnDisconnect("/", func(s socketio.Conn, reason string) {
-		fmt.Println("closed", reason)
+	//UN USUARIO LOGEADO LE VA ENVIAR MENSAJE PRIVADO A OTRO USER LOGEADO (CREA UN ROOM PERSONAL)
+	server.OnEvent("/", "private", func(s socketio.Conn, data map[string]string) bool {
+		conect, ok := listSockets[data["idReceiver"]] //SI NO EXISTE EL ID DEL SOCKET DEL RECEPTOR
+		if ok {
+
+			//VERIFICAR SI EXISTE EL NOMBRE DEL ROOM SI NO CREARLO
+			if index := existRoom(server.Rooms(""), "imbox:"+data["id"]+":"+data["receiver"], "imbox:"+data["receiver"]+":"+data["id"]); index > 0 {
+				s.Join(server.Rooms("")[index])
+				conect.Join(server.Rooms("")[index])
+			} else {
+				s.Join("imbox:" + data["id"] + ":" + data["receiver"])
+				conect.Join("imbox:" + data["id"] + ":" + data["receiver"])
+			}
+		}
+		return ok
 	})
+
+	server.OnEvent("/", "imbox:message", func(s socketio.Conn, data map[string]string) {
+
+	})
+
 	return server
+}
+
+//VERIFICAR SI UN ROOM DE DOS USERS EXISTE
+func existRoom(rooms []string, name1 string, name2 string) int {
+	for i, room := range rooms {
+		if room == name1 {
+			return i
+		}
+		if room == name2 {
+			return i
+		}
+	}
+	return -1
 }
