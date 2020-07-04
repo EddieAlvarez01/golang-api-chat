@@ -5,26 +5,32 @@ import (
 	"log"
 	"net/http"
 
+	socketio "github.com/googollee/go-socket.io"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"github.com/rs/cors"
 
 	"github.com/EddieAlvarez01/golang-api-chat/database"
-	"github.com/EddieAlvarez01/golang-api-chat/handlers"
+	handlersModels "github.com/EddieAlvarez01/golang-api-chat/handlers"
+
 	"github.com/gorilla/mux"
 )
 
-var router *mux.Router //RUTAS
+var router *mux.Router      //RUTAS
+var socket *socketio.Server //WEBSOCKET
 
 //Inicializar las rutas del servidor
 func init() {
-	initDB()
+	initDB()              //INICIALIZAR DB
+	socket = InitSocket() //INICIALIZAR SOCKET
 	router = mux.NewRouter().StrictSlash(true)
-	router.HandleFunc("/", handlers.Test)
-	router.HandleFunc("/user/create-guest", handlers.AddGuest).Methods("POST")
-	router.HandleFunc("/user/create", handlers.Add).Methods("POST")
-	router.HandleFunc("/user/update/{id}", handlers.Update).Methods("PUT")
+	router.HandleFunc("/", handlersModels.Test).Methods("GET")
+	router.HandleFunc("/user/create-guest", handlersModels.AddGuest).Methods("POST", "OPTIONS")
+	router.HandleFunc("/user/create", handlersModels.Add).Methods("POST", "OPTIONS")
+	router.HandleFunc("/user/update/{id}", handlersModels.Update).Methods("PUT", "OPTIONS")
 }
 
+//INICIALIZAR CONEXION DE BASE DE DATOS
 func initDB() {
 	var err error
 	database.DBConn, err = gorm.Open("mysql", "root:@(localhost:3306)/db_chat_golang?charset=utf8&parseTime=True")
@@ -36,6 +42,19 @@ func initDB() {
 
 func main() {
 	defer database.DBConn.Close() //CIERRA LA CONEXION CUANDO MAIN SE TERMINE DE EJECUTAR
-	fmt.Println("Server on port 4500")
-	log.Fatal(http.ListenAndServe(":4500", router))
+	go socket.Serve()
+	defer socket.Close() //CIERRA EL SOCKET CUANDO MAIN SE TERMINA
+
+	router.Handle("/socket.io/", socket)
+
+	//CORS
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:4200"},
+		AllowedMethods:   []string{"GET", "PUT", "OPTIONS", "POST", "DELETE"},
+		AllowCredentials: true,
+	})
+	handler := c.Handler(router)
+
+	fmt.Println("Servidor en el puerto 4500")
+	log.Fatal(http.ListenAndServe(":4500", handler))
 }
