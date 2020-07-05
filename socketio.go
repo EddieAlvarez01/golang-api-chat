@@ -10,6 +10,8 @@ import (
 	"github.com/googollee/go-engine.io/transport/polling"
 	"github.com/googollee/go-engine.io/transport/websocket"
 	socketio "github.com/googollee/go-socket.io"
+
+	"github.com/EddieAlvarez01/golang-api-chat/handlers"
 )
 
 var listSockets map[string]socketio.Conn = map[string]socketio.Conn{}
@@ -53,16 +55,27 @@ func InitSocket() *socketio.Server {
 			if index := existRoom(server.Rooms(""), "imbox:"+data["id"]+":"+data["receiver"], "imbox:"+data["receiver"]+":"+data["id"]); index > 0 {
 				s.Join(server.Rooms("")[index])
 				conect.Join(server.Rooms("")[index])
+				server.BroadcastToRoom("", server.Rooms("")[index], "addRoom", server.Rooms("")[index])
 			} else {
 				s.Join("imbox:" + data["id"] + ":" + data["receiver"])
 				conect.Join("imbox:" + data["id"] + ":" + data["receiver"])
+				server.BroadcastToRoom("", "imbox:"+data["id"]+":"+data["receiver"], "addRoom", "imbox:"+data["id"]+":"+data["receiver"])
 			}
 		}
 		return ok
 	})
 
-	server.OnEvent("/", "imbox:message", func(s socketio.Conn, data map[string]string) {
-
+	//EL USUARIO ENVIA MENSAJES A OTRO USER
+	server.OnEvent("/", "imbox:message", func(s socketio.Conn, data map[string]string) bool {
+		//ver el room
+		if index := existRoom(server.Rooms(""), "imbox:"+data["id"]+":"+data["receiver"], "imbox:"+data["receiver"]+":"+data["id"]); index > 0 {
+			message := handlers.Add(data)
+			if message.ID != 0 {
+				server.BroadcastToRoom("", server.Rooms("")[index], "imbox:message", data)
+				return true
+			}
+		}
+		return false
 	})
 
 	return server
