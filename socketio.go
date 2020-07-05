@@ -69,7 +69,7 @@ func InitSocket() *socketio.Server {
 	server.OnEvent("/", "imbox:message", func(s socketio.Conn, data map[string]string) bool {
 		//ver el room
 		if index := existRoom(server.Rooms(""), "imbox:"+data["id"]+":"+data["receiver"], "imbox:"+data["receiver"]+":"+data["id"]); index > 0 {
-			message := handlers.Add(data)
+			message := handlers.AddMessage(data)
 			if message.ID != 0 {
 				server.BroadcastToRoom("", server.Rooms("")[index], "imbox:message", data)
 				return true

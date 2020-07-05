@@ -17,8 +17,8 @@ func GetMessagesRoom(sender uint, receiver uint) []models.Message {
 	return messages
 }
 
-//Add AGREGA UN NUEVO MENSAJE
-func Add(data map[string]string) models.Message {
+//AddMessage AGREGA UN NUEVO MENSAJE
+func AddMessage(data map[string]string) models.Message {
 	db := database.DBConn
 	receiver, err := strconv.Atoi(data["receiver"])
 	if err != nil {
