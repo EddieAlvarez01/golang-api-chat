@@ -3,7 +3,7 @@ USE db_chat_golang;
 
 CREATE TABLE Role(
 	id INT UNSIGNED AUTO_INCREMENT,
-    nombre VARCHAR(200) NOT NULL,
+    name VARCHAR(200) NOT NULL,
     created_at DATETIME NOT NULL,
     CONSTRAINT pk_role PRIMARY KEY(id)
 )ENGINE=InnoDB;
@@ -32,7 +32,7 @@ CREATE TABLE Message(
     CONSTRAINT fk_message_sender FOREIGN KEY(sender) REFERENCES User(id)
 )ENGINE=InnoDB;
 
-INSERT INTO Role(nombre, created_at)
+INSERT INTO Role(name, created_at)
 VALUES('USER', UTC_TIMESTAMP());
-INSERT INTO Role(nombre, created_at)
+INSERT INTO Role(name, created_at)
 VALUES('INVITADO', UTC_TIMESTAMP());
