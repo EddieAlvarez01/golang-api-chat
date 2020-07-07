@@ -78,6 +78,12 @@ func InitSocket() *socketio.Server {
 		return false
 	})
 
+	//DESCONECTARSE
+	server.OnEvent("/", "disconnect", func(s socketio.Conn) {
+		delete(listSockets, s.ID())
+		s.Close()
+	})
+
 	return server
 }
 

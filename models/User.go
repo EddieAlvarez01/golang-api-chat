@@ -28,3 +28,9 @@ func (u User) Encrypt() (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(u.Password), 4)
 	return string(bytes), err
 }
+
+//CheckPassword VERIFICA SI UNA CONTRASEÑA ES IGUAL A UN HASH (LOGIN)
+func (u User) CheckPassword(password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
+	return err == nil
+}

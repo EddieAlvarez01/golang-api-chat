@@ -28,6 +28,7 @@ func init() {
 	router.HandleFunc("/user/create-guest", handlersModels.AddGuest).Methods("POST", "OPTIONS")
 	router.HandleFunc("/user/create", handlersModels.Add).Methods("POST", "OPTIONS")
 	router.HandleFunc("/user/update/{id}", handlersModels.Update).Methods("PUT", "OPTIONS")
+	router.HandleFunc("/user/signin", handlersModels.Login).Methods("POST")
 }
 
 //INICIALIZAR CONEXION DE BASE DE DATOS

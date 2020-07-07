@@ -99,6 +99,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("El nombre de usuario ya esta registrado"), http.StatusBadRequest)
 			return
 		}
+		userTest.Password = user.Password
 		hash, err := userTest.Encrypt()
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error en el servidor (HASHING)"), http.StatusInternalServerError)
@@ -169,4 +170,37 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
+}
+
+//Login loagea a un usuario
+func Login(w http.ResponseWriter, r *http.Request) {
+	req, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Inserte datos válidos"), http.StatusBadRequest)
+		return
+	}
+	db := database.DBConn
+	var user models.User
+	json.Unmarshal(req, &user)
+	validate := validator.New()
+	errValidate := validate.Struct(user)
+	if errValidate != nil {
+		http.Error(w, fmt.Sprintf("Errores: \n%v", errValidate), http.StatusBadRequest)
+		return
+	}
+	var userFind models.User
+	db.Where(&models.User{Username: user.Username}).First(&userFind)
+	if userFind.ID != 0 {
+		if userFind.CheckPassword(user.Password) {
+			user = models.User{}
+			db.Preload("Role").Select("id, role_id, username, created_at").First(&user, userFind.ID)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(user)
+			return
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	json.NewEncoder(w).Encode(responses.ErrorResponse{Code: "400", Message: "Credenciales Incorrectos"})
 }
